@@ -1,0 +1,5 @@
+[gitrepos]
+git.typo3.org git_repo_path=/var/git/repositories
+review.typo3.org git_repo_path=/var/gerrit/review/git
+forge.typo3.org git_repo_path=/var/git/repositories
+
