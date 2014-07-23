@@ -2,6 +2,7 @@
 # This playbook holds some tasks for git repo maintenance on typo3.org
 
 - hosts: gitrepos
+  gather_facts: False
   sudo: yes
   vars:
     dummy_dummy: foo
