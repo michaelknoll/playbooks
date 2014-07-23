@@ -1,5 +1,5 @@
 [gitrepos]
 git.typo3.org git_repo_path=/var/git/repositories
-review.typo3.org git_repo_path=/var/gerrit/review/git
+review.typo3.org git_repo_path=/var/gerrit/review/git ansible_ssh_port=22
 forge.typo3.org git_repo_path=/var/git/repositories
 
