@@ -21,17 +21,17 @@
 #
 
 DOCUMENTATION = """
-module: jira
-version_added: "1.6"
-short_description: create and modify issues in a JIRA instance
+module: redmin
+short_description: create and modify projects/issues in a redmine instance
 description:
-  - Create and modify issues in a JIRA instance.
+  - Create and modify projects in a REDMINE instance.
+  - Create and modify issues in a REDMINE instance.
 
 options:
   uri:
     required: true
     description:
-      - Base URI for the JIRA instance
+      - Base URI for the redmine instance
 
   operation:
     required: true
@@ -40,15 +40,10 @@ options:
     description:
       - The operation to perform.
 
-  username:
+  api_key:
     required: true
     description:
-      - The username to log-in with.
-
-  password:
-    required: true
-    description:
-      - The password to log-in with.
+      - The api_key to use
 
   project:
     aliases: [ prj ]
@@ -94,48 +89,50 @@ options:
   fields:
     required: false
     description:
-     - This is a free-form data structure that can contain arbitrary data. This is passed directly to the JIRA REST API (possibly after merging with other required data, as when passed to create). See examples for more information, and the JIRA REST API for the structure required for various fields.
+     - This is a free-form data structure that can contain arbitrary data. This is passed directly to the redmine REST API (possibly after merging with other required data, as when passed to create). See examples for more information, and the redmine REST API for the structure required for various fields.
 
 notes:
-  - "Currently this only works with basic-auth."
+  - "Currently this only works with an api key."
+  - "heavily inspired by the JIRA module"
 
+author: Peter Niederlag
 author: Steve Smith
 """
 
 EXAMPLES = """
 # Create a new issue and add a comment to it:
 - name: Create an issue
-  jira: uri={{server}} username={{user}} password={{pass}}
+  redmine: uri={{server}} username={{user}} password={{pass}}
         project=ANS operation=create
         summary="Example Issue" description="Created using Ansible" issuetype=Task
   register: issue
 
 - name: Comment on issue
-  jira: uri={{server}} username={{user}} password={{pass}}
+  redmine: uri={{server}} username={{user}} password={{pass}}
         issue={{issue.meta.key}} operation=comment 
         comment="A comment added by Ansible"
 
 # Assign an existing issue using edit
 - name: Assign an issue using free-form fields
-  jira: uri={{server}} username={{user}} password={{pass}}
+  redmine: uri={{server}} username={{user}} password={{pass}}
         issue={{issue.meta.key}} operation=edit
         assignee=ssmith
 
 # Create an issue with an existing assignee
 - name: Create an assigned issue
-  jira: uri={{server}} username={{user}} password={{pass}}
+  redmine: uri={{server}} username={{user}} password={{pass}}
         project=ANS operation=create
         summary="Assigned issue" description="Created and assigned using Ansible" 
         issuetype=Task assignee=ssmith
 
 # Edit an issue using free-form fields
 - name: Set the labels on an issue using free-form fields
-  jira: uri={{server}} username={{user}} password={{pass}}
+  redmine: uri={{server}} username={{user}} password={{pass}}
         issue={{issue.meta.key}} operation=edit 
   args: { fields: {labels: ["autocreated", "ansible"]}}
 
 - name: Set the labels on an issue, YAML version
-  jira: uri={{server}} username={{user}} password={{pass}}
+  redmine: uri={{server}} username={{user}} password={{pass}}
         issue={{issue.meta.key}} operation=edit 
   args: 
     fields: 
@@ -146,7 +143,7 @@ EXAMPLES = """
 
 # Retrieve metadata for an issue and use it to create an account
 - name: Get an issue
-  jira: uri={{server}} username={{user}} password={{pass}}
+  redmine: uri={{server}} username={{user}} password={{pass}}
         project=ANS operation=fetch issue="ANS-63"
   register: issue
 
@@ -156,7 +153,7 @@ EXAMPLES = """
 
 # Transition an issue by target status
 - name: Close the issue
-  jira: uri={{server}} username={{user}} password={{pass}}
+  redmine: uri={{server}} username={{user}} password={{pass}}
         issue={{issue.meta.key}} operation=transition status="Done"
 """
 
@@ -169,10 +166,10 @@ def request(url, user, passwd, data=None, method=None):
 
     # NOTE: fetch_url uses a password manager, which follows the
     # standard request-then-challenge basic-auth semantics. However as
-    # JIRA allows some unauthorised operations it doesn't necessarily
+    # redmine allows some unauthorised operations it doesn't necessarily
     # send the challenge, so the request occurs as the anonymous user,
     # resulting in unexpected results. To work around this we manually
-    # inject the basic-auth header up-front to ensure that JIRA treats
+    # inject the basic-auth header up-front to ensure that redmine treats
     # the requests as authorized for this user.
     auth = base64.encodestring('%s:%s' % (user, passwd)).replace('\n', '')
     response, info = fetch_url(module, url, data=data, method=method, 
