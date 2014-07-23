@@ -2,4 +2,4 @@
 USER=myuser
 REPO=TYPO3CMS/Extensions/xxxx.git
 
-ansible-playbook -vv -i hosts -u ${USER} --extra-vars delete_repo=${REPO} playbooks/deletegitrepos.yml
+ansible-playbook -vv -i hosts -u ${USER} --extra-vars delete_repo=${REPO} -K playbooks/deletegitrepos.yml
