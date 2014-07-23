@@ -1,5 +1,8 @@
 #!/bin/sh
 USER=myuser
 REPO=TYPO3CMS/Extensions/xxxx.git
+FORGE_REST_API=xxxx
+FORGE_PROJECT_ID=typo3cms-core
 
-ansible-playbook -vv -i hosts -u ${USER} --extra-vars delete_repo=${REPO} -K playbooks/deletegitrepos.yml
+ansible-playbook -v -i hosts -u ${USER} --extra-vars"delete_repo=${REPO}" -K playbooks/deletegitrepos.yml
+ansible-playbook -v -i hosts --extra-vars="forge_project_id=${FORGE_PROJECT_ID}  forge_api_key=${FORGE_API_KEY}  forge.yml
