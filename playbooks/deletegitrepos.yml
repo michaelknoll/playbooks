@@ -1,0 +1,15 @@
+---
+# This playbook holds some tasks for git repo maintenance on typo3.org
+
+- hosts: gitrepos
+  sudo: yes
+  vars:
+    dummy_dummy: foo
+  vars_prompt:
+    delete_repo: "Please enter the (relative) path of the git repo that shall be deleted"
+  tasks:
+    - name: ping
+      ping:
+    - name: "remove/drop git repository {{ delete_repo }}"
+      command: ls -al {{ git_repo_path }}/{{delete_repo}} 
+      when: delete_repo | match("(TYPO3CMS/Extensions|Packages).{5,50}")
