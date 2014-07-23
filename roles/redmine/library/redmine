@@ -102,65 +102,57 @@ author: Steve Smith
 EXAMPLES = """
 # Create a new issue and add a comment to it:
 - name: Create an issue
-  redmine: uri={{server}} username={{user}} password={{pass}}
+  redmine: uri={{server}} api_key={{key}}
         project=ANS operation=create
         summary="Example Issue" description="Created using Ansible" issuetype=Task
   register: issue
 
 - name: Comment on issue
-  redmine: uri={{server}} username={{user}} password={{pass}}
-        issue={{issue.meta.key}} operation=comment 
+  redmine: uri={{server}} api_key={{key}}
+        issue={{issue.meta.key}} operation=comment
         comment="A comment added by Ansible"
 
 # Assign an existing issue using edit
 - name: Assign an issue using free-form fields
-  redmine: uri={{server}} username={{user}} password={{pass}}
+  redmine: uri={{server}} api_key={{key}}
         issue={{issue.meta.key}} operation=edit
         assignee=ssmith
 
 # Create an issue with an existing assignee
 - name: Create an assigned issue
-  redmine: uri={{server}} username={{user}} password={{pass}}
+  redmine: uri={{server}} api_key={{key}}
         project=ANS operation=create
-        summary="Assigned issue" description="Created and assigned using Ansible" 
+        summary="Assigned issue" description="Created and assigned using Ansible"
         issuetype=Task assignee=ssmith
 
 # Edit an issue using free-form fields
 - name: Set the labels on an issue using free-form fields
-  redmine: uri={{server}} username={{user}} password={{pass}}
-        issue={{issue.meta.key}} operation=edit 
+  redmine: uri={{server}} api_key={{key}}
+        issue={{issue.meta.key}} operation=edit
   args: { fields: {labels: ["autocreated", "ansible"]}}
 
 - name: Set the labels on an issue, YAML version
-  redmine: uri={{server}} username={{user}} password={{pass}}
-        issue={{issue.meta.key}} operation=edit 
-  args: 
-    fields: 
+  redmine: uri={{server}} api_key={{key}}
+        issue={{issue.meta.key}} operation=edit
+  args:
+    fields:
       labels:
         - "autocreated"
         - "ansible"
         - "yaml"
 
-# Retrieve metadata for an issue and use it to create an account
-- name: Get an issue
-  redmine: uri={{server}} username={{user}} password={{pass}}
-        project=ANS operation=fetch issue="ANS-63"
-  register: issue
+# Retrieve a project from rest api
+- name: Get an project
+  redmine: uri={{server}} api_key={{key}}
+        project=TYPO3CMS/Core operation=project_get
+  register: project
 
-- name: Create a unix account for the reporter
-  sudo: true
-  user: name="{{issue.meta.fields.creator.name}}" comment="{{issue.meta.fields.creator.displayName}}"
-
-# Transition an issue by target status
-- name: Close the issue
-  redmine: uri={{server}} username={{user}} password={{pass}}
-        issue={{issue.meta.key}} operation=transition status="Done"
 """
 
 import json
 import base64
 
-def request(url, user, passwd, data=None, method=None):
+def request(url, api_key, data=None, method=None):
     if data:
         data = json.dumps(data)
 
@@ -171,13 +163,12 @@ def request(url, user, passwd, data=None, method=None):
     # resulting in unexpected results. To work around this we manually
     # inject the basic-auth header up-front to ensure that redmine treats
     # the requests as authorized for this user.
-    auth = base64.encodestring('%s:%s' % (user, passwd)).replace('\n', '')
-    response, info = fetch_url(module, url, data=data, method=method, 
+    response, info = fetch_url(module, url, data=data, method=method,
                                headers={'Content-Type':'application/json',
-                                        'Authorization':"Basic %s" % auth})
+                                        'X-Redmine-API-Key':"%s" % api_key})
 
     if info['status'] not in (200, 204):
-        module.fail_json(msg=info['msg'])
+        module.fail_json(msg="xxxxxx" + info['msg'] + " " + url)
 
     body = response.read()
 
@@ -186,17 +177,17 @@ def request(url, user, passwd, data=None, method=None):
     else:
         return {}
 
-def post(url, user, passwd, data):
-    return request(url, user, passwd, data=data, method='POST')
+def post(url,api_key, data):
+    return request(url,api_key, data=data, method='POST')
 
-def put(url, user, passwd, data):
-    return request(url, user, passwd, data=data, method='PUT')
+def put(url,api_key, data):
+    return request(url,api_key, data=data, method='PUT')
 
-def get(url, user, passwd):
-    return request(url, user, passwd)
+def get(url,api_key):
+    return request(url,api_key)
 
 
-def create(restbase, user, passwd, params):
+def xxcreate(restbase, api_key, params):
     createfields = {
         'project': { 'key': params['project'] },
         'summary': params['summary'],
@@ -209,47 +200,47 @@ def create(restbase, user, passwd, params):
 
     data = {'fields': createfields}
 
-    url = restbase + '/issue/'
+    url = restbase + 'issue/'
 
-    ret = post(url, user, passwd, data) 
+    ret = post(url,api_key, data)
 
     return ret
 
 
-def comment(restbase, user, passwd, params):
+def xxcomment(restbase,api_key, params):
     data = {
         'body': params['comment']
         }
 
-    url = restbase + '/issue/' + params['issue'] + '/comment'
+    url = restbase + 'issue/' + params['issue'] + '/comment'
 
-    ret = post(url, user, passwd, data)
+    ret = post(url,api_key, data)
 
     return ret
 
 
-def edit(restbase, user, passwd, params):
+def xxedit(restbase,api_key, params):
     data = {
         'fields': params['fields']
         }
 
-    url = restbase + '/issue/' + params['issue']    
+    url = restbase + 'issue/' + params['issue']
 
-    ret = put(url, user, passwd, data) 
+    ret = put(url, api_key, data)
 
     return ret
 
 
-def fetch(restbase, user, passwd, params):
-    url = restbase + '/issue/' + params['issue']
-    ret = get(url, user, passwd) 
+def project_get(restbase, api_key, params):
+    url = restbase + 'projects/' + params['project'] + '.json?include=repositories'
+    ret = get(url, api_key)
     return ret
 
 
-def transition(restbase, user, passwd, params):
+def xxtransition(restbase, api_key, params):
     # Find the transition id
     turl = restbase + '/issue/' + params['issue'] + "/transitions"
-    tmeta = get(turl, user, passwd)
+    tmeta = get(turl, api_key)
 
     target = params['status']
     tid = None
@@ -266,7 +257,7 @@ def transition(restbase, user, passwd, params):
     data = { 'transition': { "id" : tid },
              'fields': params['fields']}
 
-    ret = post(url, user, passwd, data)
+    ret = post(url, api_key, data)
 
     return ret
 
@@ -276,7 +267,8 @@ OP_REQUIRED = dict(create=['project', 'issuetype', 'summary', 'description'],
                    comment=['issue', 'comment'],
                    edit=[],
                    fetch=['issue'],
-                   transition=['status'])
+                   transition=['status'],
+					project_get=['project'])
 
 def main():
 
@@ -284,10 +276,9 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             uri=dict(required=True),
-            operation=dict(choices=['create', 'comment', 'edit', 'fetch', 'transition'],
+            operation=dict(choices=['project_get'],
                            aliases=['command'], required=True),
-            username=dict(required=True),
-            password=dict(required=True),
+            api_key=dict(required=True),
             project=dict(),
             summary=dict(),
             description=dict(),
@@ -313,24 +304,23 @@ def main():
 
     # Handle rest of parameters
     uri = module.params['uri']
-    user = module.params['username']
-    passwd = module.params['password']
+    api_key = module.params['api_key']
     if module.params['assignee']:
         module.params['fields']['assignee'] = { 'name': module.params['assignee'] }
 
     if not uri.endswith('/'):
         uri = uri+'/'
-    restbase = uri + 'rest/api/2'
+	restbase = uri
 
     # Dispatch
     try:
-        
+
         # Lookup the corresponding method for this operation. This is
         # safe as the AnsibleModule should remove any unknown operations.
         thismod = sys.modules[__name__]
         method = getattr(thismod, op)
 
-        ret = method(restbase, user, passwd, module.params)
+        ret = method(restbase, api_key, module.params)
 
     except Exception as e:
         return module.fail_json(msg=e.message)

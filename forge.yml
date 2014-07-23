@@ -13,4 +13,5 @@
   tasks:
     - pip: name=requests
     - name: 'check forge project "{{ forge_project_id }}"'
-      command: "echo {{ forge_project_id }}"
+      redmine: uri=https://forge.typo3.org api_key={{forge_api_key}} operation=project_get project={{ forge_project_id }}
+
