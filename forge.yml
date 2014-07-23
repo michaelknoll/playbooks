@@ -1,0 +1,16 @@
+---
+# This playbook holds some tasks for git repo maintenance on typo3.org
+
+- hosts: localhost
+  connection: local
+  gather_facts: False
+  sudo: False
+  vars_prompt:
+    forge_api_key: "Please enter your forge api key"
+    forge_project_id: "id of the forge project"
+  roles:
+    - redmine
+  tasks:
+    - pip: name=requests
+    - name: 'check forge project "{{ forge_project_id }}"'
+      command: "echo {{ forge_project_id }}"
