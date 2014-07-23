@@ -11,5 +11,6 @@
     - name: ping
       ping:
     - name: "remove/drop git repository {{ delete_repo }}"
-      command: ls -al {{ git_repo_path }}/{{delete_repo}} 
+      #command: ls -al {{ git_repo_path }}/{{delete_repo}}
+      file: path={{ git_repo_path }}/{{delete_repo}} state=absent
       when: delete_repo | match("(TYPO3CMS/Extensions|Packages).{5,50}")
