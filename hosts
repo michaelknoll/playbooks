@@ -1,0 +1,2 @@
+[test]
+vagrant_test ansible_ssh_host=10.20.30.100 ansible_ssh_port=22 ansible_user=mimi
