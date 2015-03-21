@@ -1,6 +1,6 @@
-[t3servers]
-vagrant_test ansible_ssh_host=10.20.30.100 ansible_ssh_user=mimi
-vagrant_test2 ansible_ssh_host=10.20.30.100 ansible_ssh_user=mimi
+[vagrant_dev]
+typo3.org ansible_ssh_host=10.20.30.100
+wiki.typo3.org ansible_ssh_host=10.20.30.100
 
 [gitrepos]
 git.typo3.org git_repo_path=/var/git/repositories
