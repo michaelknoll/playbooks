@@ -27,8 +27,8 @@ Running the following commands, you get a Vagrant sandbox (running on IP 10.20.3
     ansible-playbook -u <your username> -i hosts setup_vagrant.yaml
 
 
-### Running User Updates
+### Update email address for typo3.org user
 
 Use the following ansible command to update the users on the servers configured in `hosts`:
 
-    ansible-playbook -u <your username> -i hosts t3org_username.yaml --extra-vars "t3org_email=michi@stucki.com"
+    ansible-playbook -u <your username> -i hosts playbooks/t3org_email.yaml

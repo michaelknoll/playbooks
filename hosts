@@ -1,6 +1,8 @@
 [vagrant_dev]
 typo3.org ansible_ssh_host=10.20.30.100
 wiki.typo3.org ansible_ssh_host=10.20.30.100
+forge.typo3.org ansible_ssh_host=10.20.30.100
+review.typo3.org ansible_ssh_host=10.20.30.100
 
 [gitrepos]
 git.typo3.org git_repo_path=/var/git/repositories
