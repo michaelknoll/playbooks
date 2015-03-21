@@ -20,8 +20,6 @@ This repository holds a collection of Ansible Playbooks for the management of th
 Running the following commands, you get a Vagrant sandbox (running on IP 10.20.30.100) to test the Playbooks for user management:
 
     vagrant up
-    vagrant ssh -c "sudo su -c \"useradd -m -s /bin/bash -p does_not_matter_set_it_later -G sudo ansible; echo -e \\\"ansible\nansible\\\" | (sudo passwd ansible)
-\""
     # when asked for password, use 'ansible'
     ssh-copy-id ansible@10.20.30.100
 
@@ -30,3 +28,7 @@ Running the following commands, you get a Vagrant sandbox (running on IP 10.20.3
 Use the following ansible command to update the users on the servers configured in `hosts`:
 
     ansible-playbook -u <your username> -i hosts playbooks/t3org_email.yaml
+
+In the *Vagrant* environment, you can use
+
+    ansible-playbook -u ansible -i hosts playbooks/t3org_email.yaml
