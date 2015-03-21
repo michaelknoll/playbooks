@@ -1,0 +1,74 @@
+#################################################
+#
+# This playbook provides a prototype of how to
+# change user data on multiple machines.
+#
+# The idea is to provide a unique identifier on 
+# a "start server", e.g. typo3.org - read user
+# details and use them to change user settings on
+# other servers, e.g. forge.typo3.org
+#
+# Example:
+# 
+#     ansible-playbook -i hosts t3org_username.yaml -u <username>
+#
+# Authors: Michael Stucki <michael.stucki@typo3.org>, Michael Lihs <lihs@punkt.de>
+#
+#################################################
+
+---
+- name: Update on typo3.org
+  hosts: typo3.org
+  sudo: yes
+
+  vars_prompt:
+    - name: typo3org_old_username
+      prompt: "Existing username on typo3.org"
+      private: no
+
+    - name: typo3org_new_username
+      prompt: "New username on typo3.org"
+      private: no
+
+  tasks:
+  - name: Read email adress for given username from typo3.org
+    command: mysql -u root typo3org -e '{{ item }}'
+    with_items:
+      - SELECT username, email FROM fe_users WHERE username = "{{ typo3org_old_username }}" LIMIT 1;
+    register: result
+
+  - debug: var=item.stdout.split()
+    with_items: result.results
+
+  - set_fact:
+      typo3org_email: "{{ result.results[0].stdout.split()[3] }}"
+
+  - name: Check that new username does not already exist on typo3.org
+    command: mysql -u root typo3org -e '{{ item }}'
+    with_items:
+      - SELECT COUNT(*) FROM fe_users WHERE username="{{ typo3org_new_username }}"
+    register: result
+
+  - debug: var=item.stdout.split()
+    with_items: result.results
+
+  - set_fact:
+      existing_users_with_new_username: "{{ result.results[0].stdout.split()[1] }}"
+
+  - debug: var=existing_users_with_new_username
+  - debug: var=typo3org_email
+
+  - name: Update existing username with new username on typo3.org
+    command: mysql -u root typo3org -e '{{ item }}'
+    when: existing_users_with_new_username == "0"
+    with_items:
+      - UPDATE fe_users SET username="{{ typo3org_new_username }}" WHERE username="{{ typo3org_old_username }}"
+
+
+- name: Update on t3.wiki.org
+  hosts: wiki.typo3.org
+  sudo: yes
+
+  tasks:
+  - command: echo {{ hostvars['typo3']['t3org_id'] }}
+

@@ -1,0 +1,109 @@
+#################################################
+#
+# This playbook provides a prototype of how to
+# change an email address for a typo3.org user
+#
+# The idea is to provide a unique identifier on 
+# a "start server", e.g. typo3.org - read user
+# details and use them to change user settings on
+# other servers, e.g. forge.typo3.org
+#
+# Example:
+# 
+#     ansible-playbook -i hosts playbooks/t3org_email.yaml
+#
+# author:: Michael Stucki <michael.stucki@typo3.org>
+# author:: Michael Lihs <lihs@punkt.de>
+#
+#################################################
+
+---
+- name: Update email on typo3.org
+  hosts: typo3.org
+
+  vars_prompt:
+    - name: typo3org_old_email
+      prompt: "Existing email on typo3.org"
+      private: no
+
+    - name: typo3org_new_email
+      prompt: "New email on typo3.org"
+      private: no
+
+  tasks:
+
+# TODO check if a user with the given email exists
+
+  - name: Read username for given email from typo3.org
+    command: mysql -e '{{ item }}'
+    with_items:
+      - SELECT username, email FROM fe_users WHERE email = "{{ typo3org_old_email }}" LIMIT 1;
+    register: result
+
+  - debug: var=item.stdout.split()
+    with_items: result.results
+
+  - set_fact:
+      typo3org_username: "{{ result.results[0].stdout.split()[3] }}"
+
+  - name: Check that new email does not already exist on typo3.org
+    command: mysql -e '{{ item }}'
+    with_items:
+      - SELECT COUNT(*) FROM fe_users WHERE email="{{ typo3org_new_email }}"
+    register: result
+
+  - debug: var=item.stdout.split()
+    with_items: result.results
+
+  - set_fact:
+      existing_users_with_new_email: "{{ result.results[0].stdout.split()[1] }}"
+
+  - debug: var=existing_users_with_new_email
+  - debug: var=typo3org_username
+
+  - name: Update existing email with new email on typo3.org
+    command: mysql -e '{{ item }}'
+    when: existing_users_with_new_email == "0"
+    with_items:
+      - UPDATE fe_users SET email="{{ typo3org_new_email }}" WHERE email="{{ typo3org_old_email }}"
+
+  - set_fact:
+      typo3org_new_email: "{{ typo3org_new_email }}"
+      typo3org_old_email: "{{ typo3org_old_email }}"
+
+
+
+- name: Update email on t3.wiki.org
+  hosts: wiki.typo3.org
+
+  tasks:
+  - debug: var=hostvars['typo3.org']['typo3org_old_email']
+
+  - debug: var=hostvars['typo3.org']['typo3org_new_email']
+  
+  - name: Change email on wiki.typo3.org
+    command: mysql -e '{{ item }}'
+    with_items:
+      - UPDATE user SET user_email="{{ hostvars['typo3.org']['typo3org_new_email'] }}" WHERE user_email="{{ hostvars['typo3.org']['typo3org_old_email'] }}"
+
+
+
+- name: Udpate email on on forge.typo3.org
+  hosts: forge.typo3.org
+
+  tasks:
+  - name: Change email on forge.typo3.org
+    command: mysql -e '{{ item }}'
+    with_items:
+      - UPDATE users SET mail="{{ hostvars['typo3.org']['typo3org_new_email'] }}" WHERE mail="{{ hostvars['typo3.org']['typo3org_old_email'] }}" LIMIT 1;
+
+
+
+- name: Udpate email on on review.typo3.org
+  hosts: review.typo3.org
+
+  tasks:
+  - name: Change email on forge.typo3.org
+    command: mysql -e '{{ item }}'
+    with_items:
+      - UPDATE accounts SET mail="{{ hostvars['typo3.org']['typo3org_new_email'] }}" WHERE mail="{{ hostvars['typo3.org']['typo3org_old_email'] }}" LIMIT 1;
