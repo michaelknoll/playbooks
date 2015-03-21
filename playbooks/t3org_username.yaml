@@ -1,0 +1,45 @@
+#################################################
+#
+# This playbook provides a prototype of how to
+# change user data on multiple machines.
+#
+# The idea is to provide a unique identifier on 
+# a "start server", e.g. typo3.org - read user
+# details and use them to change user settings on
+# other servers, e.g. forge.typo3.org
+#
+# Example:
+# 
+#     ansible-playbook -i hosts t3org_username.yaml --extra-vars "t3org_email=michi@stucki.com"
+#
+# Authors: Michael Stucki <michael.stucki@typo3.org>, Michael Lihs <lihs@punkt.de>
+#
+#################################################
+
+---
+- name: Update on typo3.org
+  hosts: vagrant_test
+  sudo: yes
+
+  tasks:
+  - name: Perform MySQL update
+    command: mysql -u root t3org -e '{{ item }}'
+    with_items:
+      - SELECT id FROM typo3users WHERE email="{{ t3org_email }}"
+    register: result
+
+  - debug: var=item.stdout.split()
+    with_items: result.results
+
+  - set_fact:
+      t3org_id: "{{ result.results[0].stdout.split()[1] }}"
+
+  - debug: var=t3org_id
+
+
+- name: Update on t3.wiki.org
+  hosts: vagrant_test2
+  sudo: yes
+
+  tasks:
+  - command: echo {{ hostvars['vagrant_test']['t3org_id'] }}

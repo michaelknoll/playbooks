@@ -1,0 +1,9 @@
+# Install some packages in the Vagrant Box
+---
+- name: Install packages for testing in Vagrant box
+  hosts: vagrant_test
+  sudo: yes
+
+  tasks:
+  - name: Install mysql server
+    apt: pkg=mysql-server state=installed update_cache=true

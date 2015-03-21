@@ -1,2 +1,3 @@
-[test]
-vagrant_test ansible_ssh_host=10.20.30.100 ansible_ssh_port=22 ansible_user=mimi
+[t3servers]
+vagrant_test ansible_ssh_host=10.20.30.100 ansible_ssh_user=mimi
+vagrant_test2 ansible_ssh_host=10.20.30.100 ansible_ssh_user=mimi
