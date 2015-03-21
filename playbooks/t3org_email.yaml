@@ -1,4 +1,4 @@
-#################################################
+##################################################################################################
 #
 # This playbook provides a prototype of how to
 # change an email address for a typo3.org user
@@ -8,6 +8,11 @@
 # details and use them to change user settings on
 # other servers, e.g. forge.typo3.org
 #
+# Assumptions:
+# - We update ALL email adresses, even if there are more userss with the same email
+# - We assume that the fe_users table on typo3.org is the 'single source of truth',
+#   we only check there whether a user with the new email address already exists.
+#
 # Example:
 # 
 #     ansible-playbook -i hosts playbooks/t3org_email.yaml
@@ -15,7 +20,7 @@
 # author:: Michael Stucki <michael.stucki@typo3.org>
 # author:: Michael Lihs <lihs@punkt.de>
 #
-#################################################
+##################################################################################################
 
 ---
 - name: Update email on typo3.org
@@ -30,14 +35,25 @@
       prompt: "New email on typo3.org"
       private: no
 
-  tasks:
 
-# TODO check if a user with the given email exists
+
+  tasks:
+  - name: Check, if user with given email exists
+    command: mysql -e '{{ item }}'
+    with_items:
+      - SELECT COUNT(*) FROM fe_users WHERE email="{{ typo3org_old_email }}" AND deleted=0 AND disable=0;
+    register: result
+
+  - set_fact:
+      user_count_for_old_email: "{{ result.results[0].stdout.split()[1] }}"
+
+  - fail: msg="A user for the given email does not exist"
+    when: user_count_for_old_email == "0"
 
   - name: Read username for given email from typo3.org
     command: mysql -e '{{ item }}'
     with_items:
-      - SELECT username, email FROM fe_users WHERE email = "{{ typo3org_old_email }}" LIMIT 1;
+      - SELECT username, email FROM fe_users WHERE email = "{{ typo3org_old_email }}" AND deleted=0 AND disable=0 LIMIT 1;
     register: result
 
   - debug: var=item.stdout.split()
@@ -49,7 +65,7 @@
   - name: Check that new email does not already exist on typo3.org
     command: mysql -e '{{ item }}'
     with_items:
-      - SELECT COUNT(*) FROM fe_users WHERE email="{{ typo3org_new_email }}"
+      - SELECT COUNT(*) FROM fe_users WHERE email="{{ typo3org_new_email }}" AND deleted=0 AND disable=0
     register: result
 
   - debug: var=item.stdout.split()
@@ -65,7 +81,7 @@
     command: mysql -e '{{ item }}'
     when: existing_users_with_new_email == "0"
     with_items:
-      - UPDATE fe_users SET email="{{ typo3org_new_email }}" WHERE email="{{ typo3org_old_email }}"
+      - UPDATE fe_users SET email="{{ typo3org_new_email }}" WHERE email="{{ typo3org_old_email }}"  AND deleted=0 AND disable=0
 
   - set_fact:
       typo3org_new_email: "{{ typo3org_new_email }}"
@@ -92,6 +108,10 @@
   hosts: forge.typo3.org
 
   tasks:
+  - debug: var=hostvars['typo3.org']['typo3org_old_email']
+
+  - debug: var=hostvars['typo3.org']['typo3org_new_email']
+
   - name: Change email on forge.typo3.org
     command: mysql -e '{{ item }}'
     with_items:
@@ -103,6 +123,10 @@
   hosts: review.typo3.org
 
   tasks:
+  - debug: var=hostvars['typo3.org']['typo3org_old_email']
+
+  - debug: var=hostvars['typo3.org']['typo3org_new_email']
+
   - name: Change email on forge.typo3.org
     command: mysql -e '{{ item }}'
     with_items:
